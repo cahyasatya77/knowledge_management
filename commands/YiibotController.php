@@ -38,9 +38,10 @@ class YiibotController extends Controller
         return [];
     }
     
-    protected function sendReplay($chatid, $msgid, $text)
+    protected function sendReplay($chatid, $msgid, $text, $mode)
     {
         $data = [
+            'parse_mode' => $mode,
             'chat_id' => $chatid,
             'text' => $text,
             'reply_to_message_id' => $msgid,
@@ -62,31 +63,81 @@ class YiibotController extends Controller
         print_r($result);
     }
     
+    protected function deleteMessage($chatid, $msgid)
+    {
+        $data = [
+            'chat_id' => $chatid,
+            'message_id' => $msgid,
+        ];
+        
+        $client = new Client();
+        $response = $client->createRequest()
+                ->setMethod('post')
+                ->setUrl($this->requesturl('deleteMessage'))
+                ->addHeaders([
+                    'content-type' => 'application/x-www-form-urlencoded',
+                ])
+                ->setData($data)
+                ->send();
+        if ($response->isOk) {
+            $result = $response->content;
+        }
+        
+        print_r($result);
+    }
+
+
     protected function createResponse($text) 
     {
         return $text;
     }
     
+    protected function createResponseNewMember($msg_name, $msg_title, $msg_member_id)
+    {
+        $html = "Hai.. ".$msg_name." \n";
+        $html .= "apa kabar... \n";
+        $html .= "selamat datang di group ".$msg_title." \n";
+        $html .= "jangan lupa memperkenalkan diri <a href='tg://user?id=".$msg_member_id."'>".$msg_name."</a>.";
+        return $html;
+    }
+
+
     protected function processMessage($message) 
     {
         $updateid = $message["update_id"];
         $message_data = $message["message"];
+        
+        // Membalas pesan otomatis
+//        if (isset($message_data["text"])) {
+//            $chatid = $message_data["chat"]["id"];
+//            $message_id = $message_data["message_id"];
+//            $text = $message_data["text"];
+//            $response = $this->createResponse($text);
+//            $this->sendReplay($chatid, $message_id, $response);
+//        }
+        
+        // Menghapus pesan otomatis
         if (isset($message_data["text"])) {
-            $chatid = $message_data["chat"]["id"];
-            $message_id = $message_data["message_id"];
-            $text = $message_data["text"];
-            $response = $this->createResponse($text);
-            $this->sendReplay($chatid, $message_id, $response);
+            if ($message_data["text"] == "spam" || $message_data["text"] == "Spam") {
+                $chatid = $message_data["chat"]["id"];
+                $message_id = $message_data["reply_to_message"]["message_id"];
+                $this->deleteMessage($chatid, $message_id);
+            }
         }
         
+        // Memberikan ucapan selamat datang di group
         if (isset($message_data["new_chat_member"])) {
             $chatid = $message_data["chat"]["id"];
             $message_id = $message_data["message_id"];
-            $pesan = "Hai ".$message_data['new_chat_member']['first_name']."\n";
-            $pesan.= "Selamat datang di Grup ".$message_data['chat']['title']."\n";
-            $pesan.= "Silahkan perkenalkan diri anda.";
-            $response = $this->createResponse($pesan);
-            $this->sendReplay($chatid, $message_id, $response);
+            $msg_name = $message_data['new_chat_member']['first_name'];
+            $msg_title = $message_data['chat']['title'];
+            $msg_member_id = $message_data['new_chat_participant']['id'];
+//            $pesan = "Hai... ".$message_data['new_chat_member']['first_name']." <a href='tg://user?id='".$message_data['new_chat_participant']['id']."'>".$message_data['new_chat_member']['first_name']."</a> \n";
+//            $pesan.= "Selamat datang di Grup ".$message_data['chat']['title']."\n";
+//            $pesan.= "Silahkan perkenalkan diri anda.";
+            $response = $this->createResponseNewMember($msg_name, $msg_title, $msg_member_id);
+            $parse_mode = 'html';
+            $this->sendReplay($chatid, $message_id, $response, $parse_mode);
         }
         
         return $updateid;
