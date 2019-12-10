@@ -132,9 +132,6 @@ class YiibotController extends Controller
             $msg_name = $message_data['new_chat_member']['first_name'];
             $msg_title = $message_data['chat']['title'];
             $msg_member_id = $message_data['new_chat_participant']['id'];
-//            $pesan = "Hai... ".$message_data['new_chat_member']['first_name']." <a href='tg://user?id='".$message_data['new_chat_participant']['id']."'>".$message_data['new_chat_member']['first_name']."</a> \n";
-//            $pesan.= "Selamat datang di Grup ".$message_data['chat']['title']."\n";
-//            $pesan.= "Silahkan perkenalkan diri anda.";
             $response = $this->createResponseNewMember($msg_name, $msg_title, $msg_member_id);
             $parse_mode = 'html';
             $this->sendReplay($chatid, $message_id, $response, $parse_mode);
