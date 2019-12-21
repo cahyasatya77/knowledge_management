@@ -8,6 +8,7 @@ use yii\data\ActiveDataProvider;
 use yii\web\NotFoundHttpException;
 use yii\filters\VerbFilter;
 use yii\httpclient\Client;
+use app\models\Chattelegram;
 
 class YiibotController extends Controller 
 {
@@ -85,6 +86,17 @@ class YiibotController extends Controller
         
         print_r($result);
     }
+    
+    protected function saveChatIt($chatid, $msgid, $pesan)
+    {
+        $date = new \yii\db\Expression('NOW()');
+        \Yii::$app->db->createCommand()->insert('chat_telegram', [
+            'chat' => $pesan,
+            'issue' => 'IT',
+            'created_at' => $date,
+            'updated_at' => $date,
+        ])->execute();
+    }
 
 
     protected function createResponse($text) 
@@ -98,6 +110,13 @@ class YiibotController extends Controller
         $html .= "apa kabar... \n";
         $html .= "selamat datang di group ".$msg_title." \n";
         $html .= "jangan lupa memperkenalkan diri <a href='tg://user?id=".$msg_member_id."'>".$msg_name."</a>.";
+        return $html;
+    }
+    
+    protected function createResponseSaveChat($msg_name, $first_name, $name_id)
+    {
+        $html = "Hai... ".$first_name."\n";
+        $html .= "Issue kamu telah kita simpan <a href='tg://user?id=".$name_id."'>".$first_name."</a>.";
         return $html;
     }
 
@@ -122,6 +141,21 @@ class YiibotController extends Controller
                 $chatid = $message_data["chat"]["id"];
                 $message_id = $message_data["reply_to_message"]["message_id"];
                 $this->deleteMessage($chatid, $message_id);
+            }
+        }
+        
+        // Save Chat issue
+        if (isset($message_data["text"])) {
+            if (stripos($message_data["text"], "#issue_it") !== FALSE) {
+                $chatid = $message_data["chat"]["id"];
+                $message_id = $message_data["message_id"];
+                $first_name = $message_data["from"]["first_name"];
+                $name_id = $message_data["from"]["id"];
+                $pesan = $message_data["text"];
+                $this->saveChatIt($chatid, $message_id, $pesan);
+                $response = $this->createResponseSaveChat($chatid, $first_name, $name_id);
+                $parse_mode = 'html';
+                $this->sendReplay($chatid, $message_id, $response, $parse_mode);
             }
         }
         

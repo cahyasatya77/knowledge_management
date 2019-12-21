@@ -8,7 +8,8 @@ use Yii;
  * This is the model class for table "chat_telegram".
  *
  * @property int $id
- * @property string $chat
+ * @property string $chat\
+ * @property string $issue
  * @property int|null $created_by
  * @property int|null $created_at
  * @property int|null $updated_by
@@ -31,6 +32,7 @@ class Chattelegram extends \yii\db\ActiveRecord
     {
         return [
             [['chat'], 'required'],
+            [['issue'], 'string', 'max' => 100],
             [['chat'], 'string'],
             [['created_by', 'created_at', 'updated_by', 'updated_at'], 'integer'],
         ];
@@ -44,6 +46,7 @@ class Chattelegram extends \yii\db\ActiveRecord
         return [
             'id' => 'ID',
             'chat' => 'Chat',
+            'issue' => 'Issue',
             'created_by' => 'Created By',
             'created_at' => 'Created At',
             'updated_by' => 'Updated By',
